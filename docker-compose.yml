@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  whisper-server:
+    build: .
+    platform: linux/arm64
+    ports:
+      - "${API_PORT:-5000}:5000"
+    volumes:
+      - ./src:/app/src
+      - ./config:/app/config
+    environment:
+      - WHISPER_MODEL=${WHISPER_MODEL:-base}
+      - BATCH_SIZE=${BATCH_SIZE:-16}
+    restart: unless-stopped 
