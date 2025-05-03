@@ -4,4 +4,5 @@ numpy==1.26.2
 requests>=2.31.0
 python-dotenv==1.0.0
 loguru==0.7.2
-pyperclip>=1.8.2  # 用于剪贴板操作 
+pyperclip>=1.8.2  # 用于剪贴板操作
+sseclient-py>=1.7.2  # 用于流式输出 
