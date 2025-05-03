@@ -2,14 +2,17 @@ import requests
 import json
 import sys
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Literal
 from loguru import logger
 import sseclient
 from dotenv import load_dotenv
+import pyperclip
 
 # Load environment variables
 load_dotenv('.env.local')  # Try to load .env.local first
 load_dotenv('.env')  # Fall back to .env if exists
+
+OutputFormat = Literal["json", "text", "clipboard"]
 
 class WhisperClient:
     def __init__(self, base_url: str = "http://localhost:5000"):
@@ -65,6 +68,25 @@ class WhisperClient:
             logger.error(f"Health check failed: {str(e)}")
             raise
 
+    def format_output(self, result: dict, output_format: OutputFormat = "json") -> None:
+        """
+        Format and output the transcription result based on the specified format.
+        
+        Args:
+            result: The transcription result dictionary
+            output_format: The desired output format ("json", "text", or "clipboard")
+        """
+        if output_format == "json":
+            print(json.dumps(result, indent=2, ensure_ascii=False))
+        else:
+            # Extract plain text for both text and clipboard formats
+            text = result.get("text", "").strip()
+            
+            if output_format == "text":
+                print(text)
+            elif output_format == "clipboard":
+                pyperclip.copy(text)
+
 def main():
     """Example usage of the WhisperClient."""
     import argparse
@@ -73,6 +95,12 @@ def main():
     parser.add_argument("audio_file", help="Path to the audio file to transcribe")
     parser.add_argument("--stream", action="store_true", help="Stream results")
     parser.add_argument("--url", default="http://localhost:5000", help="Whisper API URL")
+    parser.add_argument(
+        "-o", "--output-format",
+        choices=["json", "text", "clipboard"],
+        default="json",
+        help="Output format (default: json)"
+    )
     
     args = parser.parse_args()
     
@@ -90,7 +118,7 @@ def main():
     try:
         result = client.transcribe(args.audio_file, stream=args.stream)
         if not args.stream and result:
-            print(json.dumps(result, indent=2))
+            client.format_output(result, args.output_format)
     except Exception as e:
         logger.error(f"Transcription failed: {e}")
         sys.exit(1)
