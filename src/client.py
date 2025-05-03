@@ -75,6 +75,9 @@ class WhisperClient:
         Args:
             result: The transcription result dictionary
             output_format: The desired output format ("json", "text", or "clipboard")
+        
+        Raises:
+            pyperclip.PyperclipException: 当剪贴板操作失败时
         """
         if output_format == "json":
             print(json.dumps(result, indent=2, ensure_ascii=False))
@@ -85,7 +88,16 @@ class WhisperClient:
             if output_format == "text":
                 print(text)
             elif output_format == "clipboard":
-                pyperclip.copy(text)
+                try:
+                    pyperclip.copy(text)
+                except pyperclip.PyperclipException as e:
+                    logger.error("剪贴板操作失败")
+                    logger.error(f"错误详情: {str(e)}")
+                    logger.error("可能的原因：")
+                    logger.error("1. 系统剪贴板不可用")
+                    logger.error("2. 没有剪贴板访问权限")
+                    logger.error("3. 系统剪贴板服务未运行")
+                    raise
 
 def main():
     """Example usage of the WhisperClient."""
