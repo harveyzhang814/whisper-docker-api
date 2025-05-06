@@ -20,13 +20,16 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY src/ ./src/
 COPY config/ ./config/
+COPY .env.example .env
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH=/app
+ENV API_PORT=8090
+ENV API_HOST=0.0.0.0
 
-# Expose port
-EXPOSE 5000
+# Expose port (using environment variable)
+EXPOSE ${API_PORT}
 
-# Run the application
-CMD ["uvicorn", "src.app:app", "--host", "0.0.0.0", "--port", "5000"] 
+# Run the application with environment variables
+CMD ["sh", "-c", "uvicorn src.app:app --host ${API_HOST} --port ${API_PORT}"] 
