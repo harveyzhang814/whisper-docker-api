@@ -21,6 +21,10 @@
   - 优化音频数据处理流程
   - 统一配置管理
   - 增强错误处理和日志记录
+- 优化API接口
+  - 改用文件上传替代base64编码
+  - 简化API请求参数
+  - 提高音频处理效率
 
 ### Files Changed
 - `client-requirements.txt`: 添加pyperclip依赖
