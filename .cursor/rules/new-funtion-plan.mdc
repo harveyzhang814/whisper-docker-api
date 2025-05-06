@@ -1,0 +1,17 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+Whenever a new function or a function change is suggested:
+
+- Outline a clear, step-by-step implementation plan
+
+- Enumerate all possible modifications or impacts that the change may introduce.
+
+
+And meanwhile:
+
+- await explicit agreement
+
+- Only after approval has been granted, begin writing and integrating the actual code.

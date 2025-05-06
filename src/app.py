@@ -1,97 +1,107 @@
-from fastapi import FastAPI, HTTPException, BackgroundTasks, Depends, UploadFile, File
-from fastapi.security import APIKeyHeader
+from fastapi import FastAPI, UploadFile, HTTPException, BackgroundTasks
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from typing import Optional, List
+import whisper
+import torch
 import numpy as np
 import tempfile
 import os
 from pathlib import Path
 from loguru import logger
 from dotenv import load_dotenv
-import soundfile as sf
 
-from src.config import Config
-from src.api.standard_api import StandardAPI
-from src.api.streaming_api import StreamingAPI
+# Load environment variables
+load_dotenv('.env.local')  # Try to load .env.local first
+load_dotenv('.env')  # Fall back to .env if exists
 
-# Load environment variables and configure logging
-load_dotenv('.env.local')
-load_dotenv('.env')
+# Configure logging
 logger.add("whisper.log", rotation="500 MB")
 
-# Initialize FastAPI app
 app = FastAPI(title="Whisper Transcription API")
 
-# Initialize API security
-api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
+# Load Whisper model
+MODEL_NAME = os.getenv("WHISPER_MODEL", "base")
+BATCH_SIZE = int(os.getenv("BATCH_SIZE", "16"))
 
-# Load configuration
-config = Config.get_instance()
+logger.info(f"Loading Whisper model: {MODEL_NAME}")
+model = whisper.load_model(MODEL_NAME)
+model.eval()
 
 class TranscriptionResponse(BaseModel):
     text: str
     segments: List[dict]
 
-async def verify_api_key(api_key: str = None):
-    if not api_key or api_key != config.api_key:
-        raise HTTPException(
-            status_code=401,
-            detail="Invalid or missing API key"
-        )
-
 @app.on_event("startup")
 async def startup_event():
     logger.info("Starting Whisper Transcription API")
-    StandardAPI()  # Initialize API with default configuration
+    # Verify CUDA availability
+    if torch.cuda.is_available():
+        logger.info(f"CUDA available: {torch.cuda.get_device_name(0)}")
+    else:
+        logger.warning("CUDA not available, using CPU")
 
 @app.post("/transcribe", response_model=TranscriptionResponse)
 async def transcribe_audio(
-    audio_file: UploadFile = File(...),
-    language: Optional[str] = None,
-    api_key: str = Depends(api_key_header)
+    audio: UploadFile,
+    stream: bool = False,
+    background_tasks: BackgroundTasks = None
 ):
-    await verify_api_key(api_key)
-    
     try:
-        # Read audio file
-        audio_data, sample_rate = sf.read(audio_file.file)
-        
-        # Use StandardAPI for transcription
-        api = StandardAPI()
-        result = api.transcribe(audio_data, language=language)
-        
-        return TranscriptionResponse(
-            text=result,
-            segments=[]  # TODO: Implement segment handling
-        )
-        
+        # Create temporary file
+        with tempfile.NamedTemporaryFile(delete=False, suffix=Path(audio.filename).suffix) as temp_file:
+            content = await audio.read()
+            temp_file.write(content)
+            temp_file.flush()
+
+            # Transcribe audio
+            result = model.transcribe(
+                temp_file.name,
+                fp16=torch.cuda.is_available()
+            )
+
+            # Clean up temp file
+            background_tasks.add_task(os.unlink, temp_file.name)
+
+            return TranscriptionResponse(
+                text=result["text"],
+                segments=[{
+                    "start": seg["start"],
+                    "end": seg["end"],
+                    "text": seg["text"]
+                } for seg in result["segments"]]
+            )
+
     except Exception as e:
         logger.error(f"Error during transcription: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/transcribe/stream")
-async def transcribe_stream(
-    audio_file: UploadFile = File(...),
-    language: Optional[str] = None,
-    api_key: str = Depends(api_key_header)
-):
-    await verify_api_key(api_key)
-    
+async def transcribe_stream(audio: UploadFile):
     async def generate_transcription():
         try:
-            # Read audio file
-            audio_data, sample_rate = sf.read(audio_file.file)
-            
-            # Use StreamingAPI for transcription
-            api = StreamingAPI()
-            for segment in api.transcribe_stream(audio_data, language=language):
-                yield f"data: {segment}\n\n"
+            with tempfile.NamedTemporaryFile(delete=False, suffix=Path(audio.filename).suffix) as temp_file:
+                content = await audio.read()
+                temp_file.write(content)
+                temp_file.flush()
+
+                # Process audio and stream segments
+                result = model.transcribe(
+                    temp_file.name,
+                    fp16=torch.cuda.is_available()
+                )
                 
+                # Stream each segment as it's processed
+                for segment in result["segments"]:
+                    yield f"data: {segment['text']}\n\n"
+
+                # Clean up
+                os.unlink(temp_file.name)
+
         except Exception as e:
             logger.error(f"Error during streaming transcription: {str(e)}")
             yield f"error: {str(e)}\n\n"
-            
+
     return StreamingResponse(
         generate_transcription(),
         media_type="text/event-stream"
@@ -99,14 +109,10 @@ async def transcribe_stream(
 
 @app.get("/health")
 async def health_check():
-    return {
-        "status": "healthy",
-        "model": config.whisper_model,
-        "api_version": "1.0.0"
-    }
+    return {"status": "healthy", "model": MODEL_NAME}
 
 if __name__ == "__main__":
     import uvicorn
-    host = config.api_host
-    port = config.api_port
+    host = os.getenv("API_HOST", "0.0.0.0")
+    port = int(os.getenv("API_PORT", "8090"))
     uvicorn.run(app, host=host, port=port) 
