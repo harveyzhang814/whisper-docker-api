@@ -6,3 +6,4 @@ python-dotenv==1.0.0
 loguru==0.7.2
 pyperclip>=1.8.2  # 用于剪贴板操作
 sseclient-py>=1.7.2  # 用于流式输出 
+pynput 

@@ -6,16 +6,9 @@ import requests
 from loguru import logger
 import soundfile as sf
 
-def convert_m4a_to_wav(input_path: str) -> str:
-    """Convert m4a file to wav format"""
-    output_path = input_path.rsplit('.', 1)[0] + '.wav'
-    subprocess.run(['ffmpeg', '-i', input_path, '-ar', '16000', '-ac', '1', '-y', output_path], check=True)
-    return output_path
-
 def test_local_transcription():
     # Initialize components
     sample_file = os.path.join("sample", "audio", "test_file.m4a")
-    wav_file = convert_m4a_to_wav(sample_file)
     file_input = FileInput(wav_file)
     text_output = TextOutput()
 
