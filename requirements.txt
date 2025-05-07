@@ -3,12 +3,12 @@ uvicorn==0.24.0
 python-multipart==0.0.6
 openai-whisper==20231117
 torch==2.1.1
-numpy==1.26.2
-python-dotenv==1.0.0
 pydantic==2.5.2
+tqdm==4.66.1
 pyaudio==0.2.13
+numpy==1.26.2
 sounddevice==0.4.6
 soundfile==0.12.1
 requests==2.31.0
-tqdm==4.66.1
+python-dotenv==1.0.0
 loguru==0.7.2 
