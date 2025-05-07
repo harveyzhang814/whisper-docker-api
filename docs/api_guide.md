@@ -5,12 +5,16 @@ This document provides detailed information about the Whisper Transcription API 
 ## Base URL
 
 ```
-http://localhost:9000
+http://localhost:8090
 ```
 
 ## Authentication
 
-Currently, the API does not require authentication. However, it's recommended to run the service behind a reverse proxy with proper security measures in production.
+The API requires authentication using an API key. Include the API key in the request headers:
+
+```
+Authorization: Bearer YOUR_API_KEY
+```
 
 ## API Endpoints
 
@@ -42,12 +46,14 @@ POST /transcribe
 **Request:**
 - Method: `POST`
 - Content-Type: `multipart/form-data`
+- Headers:
+  - `Authorization: Bearer YOUR_API_KEY`
 - Body Parameters:
   - `audio` (required): Audio file
     - Supported formats: WAV, MP3, OGG, FLAC, M4A
     - Recommended: WAV, 16kHz, mono
   - `format` (optional): Response format
-    - Values: `json` (default) | `text`
+    - Values: `json` (default) | `text` | `clipboard`
   - `language` (optional): Source language
     - Format: ISO 639-1 code (e.g., "en", "zh")
     - Default: Auto-detect
@@ -80,10 +86,17 @@ Complete transcription text
 **Example (curl):**
 ```bash
 # JSON response
-curl -X POST -F "audio=@sample/audio/test.wav" http://localhost:9000/transcribe
+curl -X POST \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -F "audio=@sample/audio/test.wav" \
+  http://localhost:8090/transcribe
 
 # Text-only response
-curl -X POST -F "audio=@sample/audio/test.wav" -F "format=text" http://localhost:9000/transcribe
+curl -X POST \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -F "audio=@sample/audio/test.wav" \
+  -F "format=text" \
+  http://localhost:8090/transcribe
 ```
 
 ### 3. Streaming Transcription
@@ -97,6 +110,9 @@ POST /transcribe/stream
 **Request:**
 - Method: `POST`
 - Content-Type: `multipart/form-data`
+- Headers:
+  - `Authorization: Bearer YOUR_API_KEY`
+  - `Accept: text/event-stream` (for SSE)
 - Body Parameters:
   - `audio` (required): Audio file or stream
   - `language` (optional): Source language
@@ -113,26 +129,37 @@ data: {"text": "Final part of speech"}
 
 **Example (curl):**
 ```bash
-curl -N -X POST -F "audio=@sample/audio/test.wav" http://localhost:9000/transcribe/stream
+curl -N -X POST \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Accept: text/event-stream" \
+  -F "audio=@sample/audio/test.wav" \
+  http://localhost:8090/transcribe/stream
 ```
 
 **Example (Python):**
 ```python
 import requests
+from sseclient import SSEClient
 
-def stream_audio(file_path):
+def stream_audio(file_path, api_key):
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Accept": "text/event-stream"
+    }
+    
     with open(file_path, 'rb') as f:
+        files = {'audio': f}
         response = requests.post(
-            'http://localhost:9000/transcribe/stream',
-            files={'audio': f},
+            'http://localhost:8090/transcribe/stream',
+            headers=headers,
+            files=files,
             stream=True
         )
-        
-        for line in response.iter_lines():
-            if line:
-                print(line.decode('utf-8'))
+        client = SSEClient(response)
+        for event in client.events():
+            print(event.data)
 
-stream_audio('sample/audio/test.wav')
+stream_audio('sample/audio/test.wav', 'YOUR_API_KEY')
 ```
 
 ## Error Handling
@@ -141,6 +168,7 @@ The API uses standard HTTP status codes:
 
 - 200: Success
 - 400: Bad Request (invalid parameters)
+- 401: Unauthorized (invalid or missing API key)
 - 415: Unsupported Media Type
 - 500: Internal Server Error
 
@@ -163,71 +191,65 @@ Error Response Format:
 2. **File Size:**
    - Recommended maximum: 25MB
    - For longer audio, split into chunks
-   - Stream long audio files
+   - Use streaming endpoint for long audio files
 
 3. **Performance:**
    - Keep audio segments under 30 seconds for best results
    - Use appropriate model size for your needs
    - Consider batch processing for multiple files
 
-4. **Rate Limiting:**
-   - Implement appropriate rate limiting in production
-   - Consider using a queue system for batch processing
+4. **Security:**
+   - Keep your API key secure
+   - Use HTTPS in production
+   - Implement rate limiting
 
 ## Client Integration
 
 ### Python Client Example
 
 ```python
-import requests
+from src.api.standard_api import StandardAPI
+from src.api.streaming_api import StreamingAPI
 
-class WhisperClient:
-    def __init__(self, base_url="http://localhost:9000"):
-        self.base_url = base_url.rstrip("/")
+# Standard API usage
+api = StandardAPI(api_key="YOUR_API_KEY")
+result = api.transcribe("sample/audio/test.wav")
+print(result)
 
-    def transcribe(self, audio_path, format="json"):
-        with open(audio_path, "rb") as f:
-            response = requests.post(
-                f"{self.base_url}/transcribe",
-                files={"audio": f},
-                data={"format": format}
-            )
-            response.raise_for_status()
-            return response.json()
-
-    def stream_transcribe(self, audio_path):
-        with open(audio_path, "rb") as f:
-            response = requests.post(
-                f"{self.base_url}/transcribe/stream",
-                files={"audio": f},
-                stream=True
-            )
-            for line in response.iter_lines():
-                if line:
-                    yield line.decode("utf-8")
+# Streaming API usage
+streaming_api = StreamingAPI(api_key="YOUR_API_KEY")
+for text in streaming_api.transcribe_stream("sample/audio/test.wav"):
+    print(text)
 ```
 
 ### JavaScript Client Example
 
 ```javascript
-async function transcribe(audioFile) {
+async function transcribe(audioFile, apiKey) {
     const formData = new FormData();
     formData.append('audio', audioFile);
 
-    const response = await fetch('http://localhost:9000/transcribe', {
+    const response = await fetch('http://localhost:8090/transcribe', {
         method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${apiKey}`
+        },
         body: formData
     });
 
     return await response.json();
 }
 
-async function streamTranscribe(audioFile) {
+async function streamTranscribe(audioFile, apiKey) {
     const formData = new FormData();
     formData.append('audio', audioFile);
 
-    const response = await fetch('http://localhost:9000/transcribe/stream', {
+    const response = await fetch('http://localhost:8090/transcribe/stream', {
         method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Accept': 'text/event-stream'
+        },
         body: formData
     });
 
@@ -247,18 +269,24 @@ async function streamTranscribe(audioFile) {
 ## Troubleshooting
 
 1. **Connection Issues:**
-   - Verify the service is running: `curl http://localhost:9000/health`
+   - Verify the service is running: `curl http://localhost:8090/health`
    - Check Docker container status: `docker-compose ps`
    - Check logs: `docker-compose logs whisper-server`
 
-2. **Audio Issues:**
+2. **Authentication Issues:**
+   - Verify your API key is correct
+   - Check if the API key is properly set in the request headers
+   - Ensure the API key has not expired
+
+3. **Audio Issues:**
    - Verify audio format: `ffprobe your_audio.wav`
    - Convert audio if needed: `ffmpeg -i input.mp3 -ar 16000 -ac 1 output.wav`
 
-3. **Performance Issues:**
+4. **Performance Issues:**
    - Check Docker resource allocation
    - Monitor system resources
    - Consider using a smaller model
+   - Use streaming endpoint for large files
 
 ## Support
 

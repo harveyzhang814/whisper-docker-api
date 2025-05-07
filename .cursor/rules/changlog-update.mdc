@@ -1,0 +1,13 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+
+- Create CHANGELOG.md file when project is initiated.
+
+- struacture of CHANGELOG.md should follow the principle of Keep a Changelog
+
+- CHANGELOG.md must use English as main language
+
+- update the CHANGLELOG everytime when commited to Git/Github
