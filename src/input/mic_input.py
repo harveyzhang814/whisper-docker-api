@@ -4,6 +4,7 @@ import time
 from typing import Optional
 from .base_input import BaseInput
 import threading
+from src.utils.hotkey_listener import HotkeyListener
 
 class MicrophoneInput(BaseInput):
     """Class for handling complete microphone recording"""
@@ -34,6 +35,9 @@ class MicrophoneInput(BaseInput):
         self._audio_buffer = []
         self._start_time = None
         self._should_stop = False
+        self._hotkey_listener = None
+        self._hotkey_thread = None
+        self._hotkey_triggered = False
     
     def get_audio(self) -> np.ndarray:
         """Get complete recorded audio data
@@ -65,11 +69,28 @@ class MicrophoneInput(BaseInput):
                 print("Duration reached, should stop set to True...")
                 self._should_stop = True
     
+    def _hotkey_callback(self):
+        if not self._hotkey_triggered:
+            self._hotkey_triggered = True
+            self._should_stop = True
+
+    def _start_hotkey_listener(self):
+        self._hotkey_listener = HotkeyListener()
+        self._hotkey_listener.set_callback(self._hotkey_callback)
+        self._hotkey_listener.start()
+
+    def _stop_hotkey_listener(self):
+        if self._hotkey_listener:
+            self._hotkey_listener.stop()
+            self._hotkey_listener = None
+        self._hotkey_triggered = False
+
     def start(self) -> None:
         """Start recording from microphone"""
         if not self._running_event.is_set():
             self._audio_buffer = []
             self._should_stop = False
+            self._start_hotkey_listener()
             self._stream = sd.InputStream(
                 samplerate=self.sample_rate,
                 channels=1,
@@ -96,6 +117,7 @@ class MicrophoneInput(BaseInput):
             print(f"Error stopping recording: {e}")
             self._stream = None
         finally:
+            self._stop_hotkey_listener()
             self._running_event.clear()
             print("self._running_event cleared in stop()")
     
