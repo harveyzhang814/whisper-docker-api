@@ -75,7 +75,7 @@ class MicrophoneInput(BaseInput):
             self._should_stop = True
 
     def _start_hotkey_listener(self):
-        self._hotkey_listener = HotkeyListener()
+        self._hotkey_listener = HotkeyListener(hotkey=('ctrl', 'R'))
         self._hotkey_listener.set_callback(self._hotkey_callback)
         self._hotkey_listener.start()
 

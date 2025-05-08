@@ -16,9 +16,30 @@ class HotkeyListener:
         self._on_hotkey = callback
         print("[HotkeyListener] Callback set.")
 
+    def _parse_hotkey(self):
+        key_map = {
+            'ctrl': keyboard.Key.ctrl,
+            'shift': keyboard.Key.shift,
+            'alt': keyboard.Key.alt,
+            'cmd': keyboard.Key.cmd,
+            'command': keyboard.Key.cmd,
+            'option': keyboard.Key.alt,
+            'control': keyboard.Key.ctrl,
+        }
+        combination = set()
+        for key in self.hotkey:
+            k = key.lower()
+            if k in key_map:
+                combination.add(key_map[k])
+            elif len(k) == 1:
+                combination.add(keyboard.KeyCode.from_char(k))
+            else:
+                raise ValueError(f"Unsupported hotkey part: {key}")
+        return combination
+
     def _on_activate(self):
         if not self._hotkey_pressed:
-            print(f"[HotkeyListener] Hotkey {self.hotkey[0]}+{self.hotkey[1]} detected, listener stopped.")
+            print(f"[HotkeyListener] Hotkey {self.hotkey} detected, listener stopped.")
             self._hotkey_pressed = True
             if self._on_hotkey:
                 print("[HotkeyListener] Executing callback...")
@@ -27,24 +48,25 @@ class HotkeyListener:
 
     def _run_listener(self):
         print("[HotkeyListener] Listener thread running.")
-        combination = {keyboard.Key.ctrl, keyboard.KeyCode.from_char('r')}
+        combination = self._parse_hotkey()
         current_keys = set()
 
         def on_press(key):
             print(f"[HotkeyListener] Key pressed: {key}")
-            if key == keyboard.Key.ctrl_l or key == keyboard.Key.ctrl_r:
-                current_keys.add(keyboard.Key.ctrl)
-            elif hasattr(key, 'char') and key.char == 'r':
-                current_keys.add(keyboard.KeyCode.from_char('r'))
+            # 处理Key和KeyCode
+            if isinstance(key, keyboard.Key):
+                current_keys.add(key)
+            elif isinstance(key, keyboard.KeyCode):
+                current_keys.add(key)
             if combination.issubset(current_keys):
                 self._on_activate()
 
         def on_release(key):
             print(f"[HotkeyListener] Key released: {key}")
-            if key == keyboard.Key.ctrl_l or key == keyboard.Key.ctrl_r:
-                current_keys.discard(keyboard.Key.ctrl)
-            elif hasattr(key, 'char') and key.char == 'r':
-                current_keys.discard(keyboard.KeyCode.from_char('r'))
+            if isinstance(key, keyboard.Key):
+                current_keys.discard(key)
+            elif isinstance(key, keyboard.KeyCode):
+                current_keys.discard(key)
             if self._stop_event.is_set():
                 print("[HotkeyListener] Stop event detected in on_release.")
                 return False
