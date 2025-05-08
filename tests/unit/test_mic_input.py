@@ -14,7 +14,7 @@ def test_microphone_record_and_save(tmp_path):
     logger.info("Checking microphone availability...")
     # 检查麦克风可用性
     try:
-        mic = MicrophoneInput(duration=3)
+        mic = MicrophoneInput(duration=60)
         logger.info("MicrophoneInput initialized successfully.")
     except RuntimeError as e:
         logger.warning(f"No microphone available: {e}")
