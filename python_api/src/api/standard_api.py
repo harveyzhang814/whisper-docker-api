@@ -4,7 +4,7 @@ import requests
 from config.config import Config
 from .base_api import BaseAPI
 from loguru import logger
-from src.utils.audio_utils import AudioUtils
+from python_api.src.utils.audio_utils import AudioUtils
 import tempfile
 import soundfile as sf
 import os

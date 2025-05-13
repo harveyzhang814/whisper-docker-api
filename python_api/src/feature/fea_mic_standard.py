@@ -1,10 +1,10 @@
 import os
-from src.input.mic_input import MicrophoneInput
-from src.api.standard_api import StandardAPI
-from src.output.text_output import TextOutput
-from src.output.json_output import JSONOutput  # 如有实现可解开
-# from src.output.srt_output import SrtOutput    # 如有实现可解开
-from src.utils.hotkey_listener import HotkeyListener
+from python_api.src.input.mic_input import MicrophoneInput
+from python_api.src.api.standard_api import StandardAPI
+from python_api.src.output.text_output import TextOutput
+from python_api.src.output.json_output import JSONOutput  # 如有实现可解开
+# from python_api.src.output.srt_output import SrtOutput    # 如有实现可解开
+from python_api.src.utils.hotkey_listener import HotkeyListener
 
 class MicStandardTranscrible:
     OUTPUT_CLASS_MAP = {

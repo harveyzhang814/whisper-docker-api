@@ -1,5 +1,5 @@
 import sys
-from src.feature.fea_mic_standard import MicStandardAppHotKey
+from python_api.src.feature.fea_mic_standard import MicStandardAppHotKey
 
 def main():
     app = MicStandardAppHotKey(duration=60, output_format="json", hotkey=("ctrl", "t"))

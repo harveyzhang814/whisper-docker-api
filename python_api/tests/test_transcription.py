@@ -1,7 +1,7 @@
 import os
 import subprocess
-from src.input.file_input import FileInput
-from src.output.text_output import TextOutput
+from python_api.src.input.file_input import FileInput
+from python_api.src.output.text_output import TextOutput
 import requests
 from loguru import logger
 import soundfile as sf

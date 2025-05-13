@@ -1,6 +1,6 @@
 from pynput import keyboard
 import sys
-from src.feature.fea_mic_standard import MicStandardTranscrible
+from python_api.src.feature.fea_mic_standard import MicStandardTranscrible
 
 def start_recording():
     feature = MicStandardTranscrible(duration=60, output_format="json")

@@ -4,7 +4,7 @@ import time
 from typing import Optional
 from .base_input import BaseInput
 import threading
-from src.utils.hotkey_listener import HotkeyListener
+from python_api.src.utils.hotkey_listener import HotkeyListener
 
 class MicrophoneInput(BaseInput):
     """Class for handling complete microphone recording"""

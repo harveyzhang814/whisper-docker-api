@@ -2,7 +2,7 @@ import os
 import pytest
 import numpy as np
 import logging
-from src.input.mic_input import MicrophoneInput
+from python_api.src.input.mic_input import MicrophoneInput
 import time
 from pathlib import Path
 
