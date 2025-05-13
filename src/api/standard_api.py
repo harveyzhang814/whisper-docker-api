@@ -1,7 +1,7 @@
 import numpy as np
 from typing import Optional, Dict, Any
 import requests
-from src.config import Config
+from config.config import Config
 from .base_api import BaseAPI
 from loguru import logger
 from src.utils.audio_utils import AudioUtils

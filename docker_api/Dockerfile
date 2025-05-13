@@ -14,13 +14,13 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
-COPY requirements.txt .
+COPY docker_api/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
-COPY src/ ./src/
+COPY docker_api/src/ ./src/
 COPY config/ ./config/
-COPY .env.example .env
+COPY docker_api/.env.docker.local .env
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1

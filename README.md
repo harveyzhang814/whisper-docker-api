@@ -24,170 +24,70 @@ A real-time speech-to-text service using OpenAI's Whisper model, optimized for A
 
 ```
 whisper-translation/
-├── src/
-│   ├── app.py           # FastAPI server implementation
-│   ├── client.py        # API client for testing
-│   └── ime_integration.py # Real-time microphone integration
-├── config/
-│   └── logging.conf     # Logging configuration
+├── docker_api/                # All Docker API related files and configs
+│   ├── Dockerfile
+│   ├── docker-compose.yml
+│   ├── requirements.txt
+│   ├── .env.docker.example   # Docker API environment variable template
+│   ├── .env.docker.local     # Docker API environment variable for deployment
+│   └── src/                  # API server source code (entry: app.py)
+├── config/                   # Shared config files
 ├── docs/
-│   └── api_guide.md     # API documentation
 ├── sample/
-│   └── audio/          # Sample audio files for testing
+├── src/                      # Client and other backend code
 ├── tests/
-│   └── test_api.py     # API tests
-├── Dockerfile          # Docker configuration
-├── docker-compose.yml  # Docker Compose configuration
-├── requirements.txt    # Server dependencies
-├── client-requirements.txt # Client dependencies
-└── .env.example       # Example environment variables
+├── .env.local                # Global env (not used by Docker API)
+├── .env.example
+└── ...
 ```
 
-## Quick Start
+## Quick Start (Docker API)
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/yourusername/whisper-translation.git
-   cd whisper-translation
-   ```
+### 1. 配置环境变量
 
-2. Copy and configure environment variables:
-   ```bash
-   cp .env.example .env.local  # For local development
-   # or
-   cp .env.example .env       # For production
-   ```
+在 `docker_api/` 目录下，复制并编辑环境变量文件：
+```bash
+cp docker_api/.env.docker.example docker_api/.env.docker.local
+# 按需修改 docker_api/.env.docker.local
+```
 
-3. Start the Docker service:
-   ```bash
-   docker-compose up -d
-   ```
+### 2. 构建并部署 API 服务
 
-4. Test the API:
-   ```bash
-   curl -X POST -F "audio=@sample/audio/test.wav" http://localhost:9000/transcribe
-   ```
+在项目根目录下运行：
+```bash
+docker-compose -f docker_api/docker-compose.yml up --build -d
+```
+- 推荐只用 compose 管理服务，无需手动 docker build。
+- 镜像和服务会自动构建并启动。
 
-## Client Setup (Optional)
+### 3. 查看服务日志
+```bash
+docker-compose -f docker_api/docker-compose.yml logs -f
+```
 
-If you want to use the real-time microphone input feature:
-
-1. Create and activate a virtual environment:
-   ```bash
-   python3 -m venv venv
-   source venv/bin/activate
-   ```
-
-2. Install client dependencies:
-   ```bash
-   pip3 install -r client-requirements.txt
-   ```
-
-3. Grant microphone permissions:
-   - System Settings > Privacy & Security > Microphone
-   - Enable for Terminal/IDE
-
-4. Run the microphone integration:
-   ```bash
-   python3 src/ime_integration.py --url http://localhost:9000
-   ```
-
-## Configuration
-
-### Environment Variables (.env.local or .env)
-
-- `WHISPER_MODEL`: Model size (tiny/base/small/medium/large)
-- `API_HOST`: Server host (default: 0.0.0.0)
-- `API_PORT`: Server port (default: 9000)
-- `BATCH_SIZE`: Inference batch size (default: 16)
-
-Note: `.env.local` takes precedence over `.env` and is ignored by Git.
-
-### Audio Settings
-
-- Sample Rate: 16kHz (recommended)
-- Channels: Mono
-- Format: WAV (recommended), MP3, OGG supported
-- Chunk Duration: 2 seconds (configurable)
-
-## API Endpoints
-
-### POST /transcribe
-
-Transcribe an audio file.
-
-**Request:**
-- Method: POST
-- Content-Type: multipart/form-data
-- Body: 
-  - audio: Audio file
-  - format: Output format (json/text)
-
-**Response:**
+### 4. 测试 API
+```bash
+curl http://localhost:8090/health
+```
+应返回：
 ```json
-{
-    "text": "Transcribed text",
-    "segments": [
-        {
-            "start": 0.0,
-            "end": 2.5,
-            "text": "Segment text"
-        }
-    ]
-}
+{"status": "healthy", "model": "base"}
 ```
 
-### POST /transcribe/stream
+## 环境变量管理说明
+- Docker API 服务环境变量独立于主项目，全部在 `docker_api/.env.docker.local` 和 `.env.docker.example` 中维护。
+- 不再使用根目录下的 `.env.local` 或 `.env.example` 进行 Docker API 配置。
 
-Stream transcription results in real-time.
+## 其他说明
+- 如需修改 API 代码，请在 `docker_api/src/` 下编辑。
+- 如需自定义 Dockerfile 或 compose 配置，请在 `docker_api/` 下操作。
+- 停止服务：
+  ```bash
+  docker-compose -f docker_api/docker-compose.yml down
+  ```
 
-**Request:**
-- Method: POST
-- Content-Type: multipart/form-data
-- Body:
-  - audio: Audio file or stream
-
-**Response:**
-Server-Sent Events (SSE) with transcription updates.
-
-## Performance Optimization
-
-- Model Selection Guide:
-  - tiny: Fastest, lowest accuracy (1GB VRAM)
-  - base: Good balance (1GB VRAM)
-  - small: Better accuracy (2GB VRAM)
-  - medium: High accuracy (5GB VRAM)
-  - large: Best accuracy (10GB VRAM)
-
-- Docker Resource Allocation:
-  - Recommended minimum: 2GB RAM
-  - Recommended CPU: 2 cores
-  - GPU acceleration supported if available
-
-## Development
-
-### Running Tests
-```bash
-python -m pytest tests/
-```
-
-### Building Docker Image
-```bash
-docker-compose build
-```
-
-### Local Development
-```bash
-uvicorn src.app:app --reload --host 0.0.0.0 --port 9000
-```
-
-## Contributing
-
-1. Fork the repository
-2. Create your feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a Pull Request
+## 旧版/客户端开发
+- 客户端和其他后端代码仍在 `src/` 目录下，环境变量管理不变。
 
 ## License
 

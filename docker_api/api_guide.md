@@ -1,5 +1,27 @@
 # Whisper API Guide
 
+> **Note:** Docker API environment variables are now managed independently in `.env.docker.local` and `.env.docker.example` under the `docker_api/` directory. Please refer to these files for deployment configuration.
+
+## Docker API Deployment (Recommended)
+
+- All Docker API related files, configs, and source code are in the `docker_api/` directory.
+- Environment variables for Docker API are managed in `docker_api/.env.docker.local` and `.env.docker.example`.
+- To build and deploy the API service, run the following in the project root:
+
+```bash
+docker-compose -f docker_api/docker-compose.yml up --build -d
+```
+- To view logs:
+```bash
+docker-compose -f docker_api/docker-compose.yml logs -f
+```
+- To stop the service:
+```bash
+docker-compose -f docker_api/docker-compose.yml down
+```
+
+---
+
 This document provides detailed information about the Whisper Transcription API endpoints, their usage, and examples.
 
 ## Base URL

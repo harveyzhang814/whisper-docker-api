@@ -15,8 +15,12 @@ class Config:
     
     def _load_config(self):
         """Load configuration from environment variables"""
-        # 优先加载 .env.local，如果不存在则加载 .env
-        if os.path.exists(".env.local"):
+        # 优先加载 docker_api/.env.docker.local 或 .env.docker.example
+        if os.path.exists(os.path.join(os.path.dirname(__file__), ".env.docker.local")):
+            load_dotenv(os.path.join(os.path.dirname(__file__), ".env.docker.local"))
+        elif os.path.exists(os.path.join(os.path.dirname(__file__), ".env.docker.example")):
+            load_dotenv(os.path.join(os.path.dirname(__file__), ".env.docker.example"))
+        elif os.path.exists(".env.local"):
             load_dotenv(".env.local")
         else:
             load_dotenv()
@@ -34,6 +38,10 @@ class Config:
         self.chunk_size = int(os.getenv("CHUNK_SIZE", "1024"))
         self.channels = int(os.getenv("CHANNELS", "1"))
         
+        # Logging Configuration
+        self.log_level = os.getenv("LOG_LEVEL", "INFO")
+        self.log_file = os.getenv("LOG_FILE", "whisper.log")
+    
     @property
     def api_base_url(self) -> str:
         """Get API base URL"""
