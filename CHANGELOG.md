@@ -12,6 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Docker API specific configuration options
 - Template environment file for Docker configuration
 - Generated python_api/requirements.txt including all dependencies from client-requirements.txt for unified backend and client dependency management.
+- Created swift_ui directory for SwiftUI frontend code and documentation.
 ### Changed
 - Split dependencies: API/server dependencies are now only in `requirements.txt`, client dependencies are only in `client-requirements.txt`.
 - Removed `pyperclip` and `sseclient-py` from `requirements.txt` (now only in client-requirements.txt).
